@@ -1,14 +1,15 @@
-# Weather Forecast Application
+# LaGuardia ML Weather Predictor
 
-A Flask-based weather application that fetches real-time weather data from the National Weather Service API, stores historical data, and provides weather predictions using machine learning.
+An advanced machine learning-powered weather forecasting system that fetches real-time data from LaGuardia Airport (KLGA) weather station, processes historical patterns, and generates accurate predictions using sophisticated ML models.
 
 ## Features
 
-- Real-time weather data from NOAA Weather API
-- Historical weather data tracking
-- Machine learning-based weather predictions for the remaining hours of the day
-- Interactive data visualization
-- Automatic data updates every 5 minutes
+- Real-time weather data from LaGuardia Airport (KLGA) NOAA Weather API
+- Machine learning-based weather predictions using polynomial regression
+- Historical weather pattern analysis and tracking
+- Interactive data visualization with real-time updates
+- Automated data collection every 5 minutes
+- Multi-parameter predictions (temperature, humidity, wind speed)
 
 ## Tech Stack
 
