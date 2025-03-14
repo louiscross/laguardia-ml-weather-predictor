@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--primary-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            padding: 2rem;
+        }
+
+        .weather-card {
+            background: var(--card-background);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .current-temp {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .current-details {
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+            color: var(--primary-color);
+        }
+
+        .refresh-time {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+
+        .observation-count {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .chart-container {
+            background: var(--card-background);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        #chart {
+            min-height: 400px;
+        }
+
+        .time-range-buttons {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .time-range-btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            background-color: var(--background-color);
+            color: var(--primary-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-range-btn:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .time-range-btn.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .weather-icon {
+            font-size: 2.5rem;
+            margin-right: 1rem;
+            color: var(--secondary-color);
+        }
+
+        .data-table {
+            margin-top: 2rem;
+        }
+
+        .table {
+            background: var(--card-background);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .table td, .table th {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <!-- Current Weather Card -->
+            <div class="col-lg-5">
+                <div class="weather-card">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-cloud weather-icon"></i>
+                        <div class="current-temp">{{ records[0].temp }}°F</div>
+                    </div>
+                    <div class="current-details">
+                        <div><strong>Humidity:</strong> {{ records[0].humidity }}%</div>
+                        <div><strong>Wind:</strong> {{ records[0].wind_speed }} at {{ records[0].wind_dir }}°</div>
+                        <div><strong>Visibility:</strong> {{ records[0].visibility }} miles</div>
+                        <div><strong>Pressure:</strong> {{ records[0].pressure }} mb</div>
+                        <div><strong>Conditions:</strong> {{ records[0].conditions }}</div>
+                    </div>
+                    <div class="refresh-time">
+                        Last Updated: <span id="last-updated" data-time="{{ datetime.now().strftime('%Y-%m-%d %H:%M') }}">{{ datetime.now().strftime('%B %d, %Y %I:%M %p') }}</span>
+                    </div>
+                    <div class="observation-count">{{ records|length }} observations available</div>
+                </div>
+            </div>
+
+            <!-- Weather Chart -->
+            <div class="col-lg-7">
+                <div class="chart-container">
+                    <div class="time-range-buttons">
+                        <button class="time-range-btn active" data-range="1">24 Hours</button>
+                        <button class="time-range-btn" data-range="3">3 Days</button>
+                        <button class="time-range-btn" data-range="7">7 Days</button>
+                    </div>
+                    <div id="chart"></div>
+                </div>
+
+                <!-- Today's Forecast Chart -->
+                <div class="chart-container">
+                    <h4 class="text-center mb-3">Today's Forecast with Predictions</h4>
+                    <div id="today-chart"></div>
+                    <div class="text-center mt-2">
+                        <span class="badge bg-primary me-2">Actual Data</span>
+                        <span class="badge bg-secondary">Predicted Data</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historical Data Table -->
+        <div class="data-table">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Temperature</th>
+                        <th>Humidity</th>
+                        <th>Wind</th>
+                        <th>Visibility</th>
+                        <th>Conditions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records[:24] %}
+                    <tr>
+                        <td>{{ record.timestamp }}</td>
+                        <td>{{ record.temp }}°F</td>
+                        <td>{{ record.humidity }}%</td>
+                        <td>{{ record.wind_speed }} at {{ record.wind_dir }}°</td>
+                        <td>{{ record.visibility }} miles</td>
+                        <td>{{ record.conditions }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        // Update the "last updated" time every minute
+        function updateLastUpdated() {
+            const lastUpdated = document.getElementById('last-updated');
+            const date = new Date(lastUpdated.dataset.time);
+            lastUpdated.textContent = date.toLocaleString();
+        }
+        setInterval(updateLastUpdated, 60000);
+        updateLastUpdated();
+
+        // Initialize the chart when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Parse data from Flask
+            const rawData = {
+                timestamps: JSON.parse('{{ timestamps|tojson|safe }}'),
+                temperatures: JSON.parse('{{ temperatures|tojson|safe }}'),
+                humidityValues: JSON.parse('{{ humidity_values|tojson|safe }}'),
+                windSpeeds: JSON.parse('{{ wind_speeds|tojson|safe }}'),
+                todayTimestamps: JSON.parse('{{ today_timestamps|tojson|safe }}'),
+                todayTemperatures: JSON.parse('{{ today_temperatures|tojson|safe }}'),
+                todayHumidity: JSON.parse('{{ today_humidity|tojson|safe }}'),
+                todayWind: JSON.parse('{{ today_wind|tojson|safe }}')
+            };
+
+            // Format data for the historical chart
+            function formatChartData(days) {
+                const now = new Date();
+                const cutoff = new Date(now - days * 24 * 60 * 60 * 1000);
+
+                const filteredData = rawData.timestamps.map((timestamp, i) => {
+                    const date = new Date(timestamp);
+                    if (date >= cutoff) {
+                        return {
+                            timestamp,
+                            temp: rawData.temperatures[i],
+                            humidity: rawData.humidityValues[i],
+                            wind: rawData.windSpeeds[i]
+                        };
+                    }
+                    return null;
+                }).filter(item => item !== null);
+
+                return {
+                    chartData: filteredData.map(item => ({
+                        x: new Date(item.timestamp).getTime(),
+                        y: item.temp
+                    })),
+                    humidityData: filteredData.map(item => ({
+                        x: new Date(item.timestamp).getTime(),
+                        y: item.humidity
+                    })),
+                    windData: filteredData.map(item => ({
+                        x: new Date(item.timestamp).getTime(),
+                        y: item.wind
+                    }))
+                };
+            }
+
+            // Format data for today's chart with predictions
+            function formatTodayChartData() {
+                const actualLength = rawData.todayTemperatures.length - rawData.temperatures.length;
+                
+                return {
+                    tempData: rawData.todayTimestamps.map((timestamp, i) => ({
+                        x: new Date(timestamp).getTime(),
+                        y: rawData.todayTemperatures[i],
+                        predicted: i >= actualLength
+                    })),
+                    humidityData: rawData.todayTimestamps.map((timestamp, i) => ({
+                        x: new Date(timestamp).getTime(),
+                        y: rawData.todayHumidity[i],
+                        predicted: i >= actualLength
+                    })),
+                    windData: rawData.todayTimestamps.map((timestamp, i) => ({
+                        x: new Date(timestamp).getTime(),
+                        y: rawData.todayWind[i],
+                        predicted: i >= actualLength
+                    }))
+                };
+            }
+
+            function updateChart(days) {
+                const data = formatChartData(days);
+                chart.updateSeries([
+                    {
+                        name: 'Temperature (°F)',
+                        data: data.chartData
+                    },
+                    {
+                        name: 'Humidity (%)',
+                        data: data.humidityData
+                    },
+                    {
+                        name: 'Wind Speed (mph)',
+                        data: data.windData
+                    }
+                ]);
+            }
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 400,
+                    animations: {
+                        enabled: true
+                    },
+                    toolbar: {
+                        show: true
+                    }
+                },
+                series: [
+                    {
+                        name: 'Temperature (°F)',
+                        data: []
+                    },
+                    {
+                        name: 'Humidity (%)',
+                        data: []
+                    },
+                    {
+                        name: 'Wind Speed (mph)',
+                        data: []
+                    }
+                ],
+                colors: ['#e74c3c', '#3498db', '#2ecc71'],
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        datetimeUTC: false,
+                        format: 'MMM dd HH:mm',
+                        style: {
+                            colors: '#2c3e50'
+                        }
+                    }
+                },
+                yaxis: [
+                    {
+                        title: {
+                            text: 'Temperature (°F)',
+                            style: {
+                                color: '#e74c3c'
+                            }
+                        },
+                        labels: {
+                            style: {
+                                colors: '#2c3e50'
+                            }
+                        }
+                    },
+                    {
+                        opposite: true,
+                        title: {
+                            text: 'Humidity (%) / Wind Speed (mph)',
+                            style: {
+                                color: '#3498db'
+                            }
+                        },
+                        labels: {
+                            style: {
+                                colors: '#2c3e50'
+                            }
+                        }
+                    }
+                ],
+                stroke: {
+                    curve: 'smooth',
+                    width: 3
+                },
+                title: {
+                    text: 'Weather Conditions Over Time',
+                    align: 'center',
+                    style: {
+                        fontSize: '20px',
+                        color: '#2c3e50'
+                    }
+                },
+                tooltip: {
+                    shared: true,
+                    x: {
+                        format: 'MMM dd HH:mm'
+                    },
+                    theme: 'light'
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'center'
+                },
+                grid: {
+                    borderColor: '#f1f1f1'
+                }
+            };
+
+            // Create historical chart
+            const chart = new ApexCharts(document.querySelector("#chart"), options);
+            chart.render();
+
+            // Initialize with 24-hour data
+            updateChart(1);
+
+            // Create today's forecast chart
+            const todayData = formatTodayChartData();
+            const todayOptions = {
+                ...options,
+                chart: {
+                    ...options.chart,
+                    height: 350,
+                    type: 'line'
+                },
+                title: {
+                    text: "Today's Weather Forecast",
+                    align: 'center',
+                    style: {
+                        fontSize: '20px',
+                        color: '#2c3e50'
+                    }
+                },
+                series: [
+                    {
+                        name: 'Temperature (°F)',
+                        data: todayData.tempData
+                    },
+                    {
+                        name: 'Humidity (%)',
+                        data: todayData.humidityData
+                    },
+                    {
+                        name: 'Wind Speed (mph)',
+                        data: todayData.windData
+                    }
+                ],
+                stroke: {
+                    curve: 'smooth',
+                    width: [3, 3, 3],
+                    dashArray: todayData.tempData.map(d => d.predicted ? [5, 5] : 0)
+                },
+                markers: {
+                    size: 5,
+                    hover: {
+                        size: 7
+                    }
+                },
+                tooltip: {
+                    ...options.tooltip,
+                    custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                        const isPredicted = todayData.tempData[dataPointIndex].predicted;
+                        return `<div class="p-2">
+                            <div><strong>${w.globals.seriesNames[seriesIndex]}:</strong> ${series[seriesIndex][dataPointIndex]}</div>
+                            <div class="text-muted">${isPredicted ? '(Predicted)' : '(Actual)'}</div>
+                        </div>`;
+                    }
+                }
+            };
+
+            const todayChart = new ApexCharts(document.querySelector("#today-chart"), todayOptions);
+            todayChart.render();
+
+            // Add click handlers for time range buttons
+            document.querySelectorAll('.time-range-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update active button state
+                    document.querySelectorAll('.time-range-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+
+                    // Update chart data
+                    const days = parseInt(this.dataset.range);
+                    updateChart(days);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
