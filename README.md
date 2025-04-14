@@ -2,6 +2,12 @@
 
 An advanced machine learning-powered weather forecasting system that fetches real-time data from LaGuardia Airport (KLGA) weather station, processes historical patterns, and generates accurate predictions using sophisticated ML models.
 
+![image](https://github.com/user-attachments/assets/2d62dfca-1523-48ae-b160-b983282a3dc3)
+
+![image](https://github.com/user-attachments/assets/229410ab-a4ee-4bce-9627-d0438cecc037)
+
+
+
 ## Features
 
 - Real-time weather data from LaGuardia Airport (KLGA) NOAA Weather API
@@ -29,7 +35,7 @@ An advanced machine learning-powered weather forecasting system that fetches rea
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/weather-forecast.git
+git clone https://github.com/louiscross/weather-forecast.git
 cd weather-forecast
 ```
 
